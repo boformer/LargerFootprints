@@ -39,6 +39,9 @@ namespace LargerFootprints
             Detour.BuildingDecorationDetour.Deploy();
             Detour.BuildingManagerDetour.Deploy();
 
+            // Building collision checks
+            Detour.BuildingToolDetour.Deploy();
+
             // Replace getWidthRange/getLengthRange methods of all ploppable BuildingAIs
             // By default these are limiting the asset size to 
             // 16x8, 15x9, 14x11, 13x12, 12x13, 11x14, 9x15, 8x16
@@ -74,6 +77,8 @@ namespace LargerFootprints
         {
             Detour.BuildingDecorationDetour.Revert();
             Detour.BuildingManagerDetour.Revert();
+
+            Detour.BuildingToolDetour.Revert();
 
             Detour.BuildingAIDetour<CargoStationAI>.Revert();
             Detour.BuildingAIDetour<CargoHarborAI>.Revert();

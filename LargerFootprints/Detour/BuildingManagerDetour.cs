@@ -14,6 +14,10 @@ namespace LargerFootprints.Detour
         private static MethodInfo _BuildingManager_CreateBuilding_original;
         private static MethodInfo _BuildingManager_CreateBuilding_detour;
 
+        private static RedirectCallsState _BuildingManager_AddToGrid_state;
+        private static MethodInfo _BuildingManager_AddToGrid_original;
+        private static MethodInfo _BuildingManager_AddToGrid_detour;
+
         public static void Deploy()
         {
             if (!deployed)
@@ -21,6 +25,12 @@ namespace LargerFootprints.Detour
                 _BuildingManager_CreateBuilding_original = typeof(BuildingManager).GetMethod("CreateBuilding", BindingFlags.Instance | BindingFlags.Public);
                 _BuildingManager_CreateBuilding_detour = typeof(BuildingManagerDetour).GetMethod("CreateBuilding", BindingFlags.Instance | BindingFlags.Public);
                 _BuildingManager_CreateBuilding_state = RedirectionHelper.RedirectCalls(_BuildingManager_CreateBuilding_original, _BuildingManager_CreateBuilding_detour);
+
+
+                Debug.Log("LargerFootprints: Replacing AddToGrid");
+                _BuildingManager_AddToGrid_original = typeof(BuildingManager).GetMethod("AddToGrid", BindingFlags.Instance | BindingFlags.NonPublic);
+                _BuildingManager_AddToGrid_detour = typeof(BuildingManagerDetour).GetMethod("AddToGrid", BindingFlags.Instance | BindingFlags.NonPublic);
+                _BuildingManager_AddToGrid_state = RedirectionHelper.RedirectCalls(_BuildingManager_AddToGrid_original, _BuildingManager_AddToGrid_detour);
 
                 deployed = true;
 
@@ -36,6 +46,10 @@ namespace LargerFootprints.Detour
                 _BuildingManager_CreateBuilding_original = null;
                 _BuildingManager_CreateBuilding_detour = null;
 
+                RedirectionHelper.RevertRedirect(_BuildingManager_AddToGrid_original, _BuildingManager_AddToGrid_state);
+                _BuildingManager_AddToGrid_original = null;
+                _BuildingManager_AddToGrid_detour = null;
+
                 deployed = false;
 
                 Debug.Log("LargerFootprints: BuildingManager Methods restored!");
@@ -44,7 +58,8 @@ namespace LargerFootprints.Detour
 
         public bool CreateBuilding(out ushort building, ref Randomizer randomizer, BuildingInfo info, Vector3 position, float angle, int length, uint buildIndex)
         {
-            var _m_buildings = Singleton<BuildingManager>.instance.m_buildings;
+            var _this = Singleton<BuildingManager>.instance;
+            var _m_buildings = _this.m_buildings;
 
             ushort num;
             if (_m_buildings.CreateItem(out num, ref randomizer))
@@ -116,9 +131,11 @@ namespace LargerFootprints.Detour
                 _m_buildings.m_buffer[(int)building].m_frame1 = _m_buildings.m_buffer[(int)building].m_frame0;
                 _m_buildings.m_buffer[(int)building].m_frame2 = _m_buildings.m_buffer[(int)building].m_frame0;
                 _m_buildings.m_buffer[(int)building].m_frame3 = _m_buildings.m_buffer[(int)building].m_frame0;
-                InitializeBuilding(building, ref _m_buildings.m_buffer[(int)building]); // Avoid reflection
 
-                var _this = Singleton<BuildingManager>.instance;
+                typeof(BuildingManager).GetMethod("InitializeBuilding", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(_this, new object[] { building, _this.m_buildings.m_buffer[(int)building] });
+
+                AddToGrid(building, ref _m_buildings.m_buffer[(int)building]);
+
                 _this.UpdateBuilding(building);
                 _this.UpdateBuildingColors(building);
                 _this.m_buildingCount = (int)(_m_buildings.ItemCount() - 1u);
@@ -129,10 +146,15 @@ namespace LargerFootprints.Detour
             return false;
         }
 
-        private void InitializeBuilding(ushort building, ref Building data)
+        private void AddToGrid(ushort building, ref Building data)
         {
+            Debug.LogFormat("AddToGrid called");
             var _this = Singleton<BuildingManager>.instance;
             
+            Debug.LogFormat("AddToGrid called {0} {1} {2}", _this, building, data);
+
+            if (_this == null) return;
+
             int num = Mathf.Clamp((int)(data.m_position.x / 64f + 135f), 0, 269);
             int num2 = Mathf.Clamp((int)(data.m_position.z / 64f + 135f), 0, 269);
             int num3 = num2 * 270 + num;
@@ -143,11 +165,14 @@ namespace LargerFootprints.Detour
             {
                 _this.m_buildings.m_buffer[(int)building].m_nextGridBuilding = _this.m_buildingGrid[num3];
                 _this.m_buildingGrid[num3] = building;
+
             }
             finally
             {
-                Monitor.Exit(Singleton<BuildingManager>.instance.m_buildingGrid);
+                Monitor.Exit(_this.m_buildingGrid);
             }
+
+            Debug.Log("Added building to grid");
         }
     }
 }

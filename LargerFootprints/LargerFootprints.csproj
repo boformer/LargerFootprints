@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Detour\BuildingAIDetour.cs" />
     <Compile Include="Detour\BuildingDecorationDetour.cs" />
+    <Compile Include="Detour\BuildingToolDetour.cs" />
     <Compile Include="Detour\BuildingManagerDetour.cs" />
     <Compile Include="LargerFootprintsMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
