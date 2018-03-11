@@ -31,13 +31,10 @@ namespace LargerFootprints
 
         public override void OnCreated(ILoading loading)
         {
-            // Modify methods which set Building.Width/Building.Length:
+            // Modify setters Building.Width/Building.Length:
             // Those are properties of the Building struct
             // The setters clamp the width and length to 16
-            // The modified methods directly modify the m_width and m_length field 
-            // instead of using the setters
-            Detour.BuildingDecorationDetour.Deploy();
-            Detour.BuildingManagerDetour.Deploy();
+            Detour.BuildingDetour.Deploy();
 
             // Replace getWidthRange/getLengthRange methods of all ploppable BuildingAIs
             // By default these are limiting the asset size to 
@@ -72,8 +69,7 @@ namespace LargerFootprints
         }
         public override void OnReleased()
         {
-            Detour.BuildingDecorationDetour.Revert();
-            Detour.BuildingManagerDetour.Revert();
+            Detour.BuildingDetour.Revert();
 
             Detour.BuildingAIDetour<CargoStationAI>.Revert();
             Detour.BuildingAIDetour<CargoHarborAI>.Revert();
